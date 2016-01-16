@@ -1,5 +1,8 @@
 ﻿namespace mods.de_XML_Parser
 {
+    /// <summary>
+    /// All user information are stored in this struct
+    /// </summary>
     public struct User
     {
         #region private fields

@@ -4,6 +4,9 @@ using System.Xml;
 
 namespace mods.de_XML_Parser
 {
+    /// <summary>
+    /// All information of a Thread are stored in objects of this class
+    /// </summary>
     public class Thread
     {
         #region private fields
