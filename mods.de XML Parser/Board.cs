@@ -92,15 +92,18 @@ namespace mods.de_XML_Parser
             string xmlFile = $"http://forum.mods.de/bb/xml/board.php?BID={id}&page={pageId}";
             var xmlDoc = Helper.LoadXml(xmlFile);
 
-            name = xmlDoc.DocumentElement.ChildNodes[0].InnerText;
-            description = xmlDoc.DocumentElement.ChildNodes[1].InnerText;
-            numberOfThreads = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[2].Attributes["value"].Value);
-            numberOfReplies = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[3].Attributes["value"].Value);
-            categoryId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[4].Attributes["id"].Value);
-
-            foreach (XmlAttribute item in xmlDoc.DocumentElement.ChildNodes[5].Attributes)
+            if (xmlDoc != null)
             {
-                threadsWith.Add(item.Name, Convert.ToInt32(item.Value));
+                name = xmlDoc.DocumentElement.ChildNodes[0].InnerText;
+                description = xmlDoc.DocumentElement.ChildNodes[1].InnerText;
+                numberOfThreads = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[2].Attributes["value"].Value);
+                numberOfReplies = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[3].Attributes["value"].Value);
+                categoryId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[4].Attributes["id"].Value);
+
+                foreach (XmlAttribute item in xmlDoc.DocumentElement.ChildNodes[5].Attributes)
+                {
+                    threadsWith.Add(item.Name, Convert.ToInt32(item.Value));
+                }
             }
         }
         #endregion
@@ -116,16 +119,27 @@ namespace mods.de_XML_Parser
             var xmlFile = $"http://forum.mods.de/bb/xml/board.php?BID={this.Id}&page={_page}";
             var xmlDoc = Helper.LoadXml(xmlFile);
 
-            int threadsOnPageCount = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[5].Attributes["count"].Value);
-            List<Thread> threads = new List<Thread>(threadsOnPageCount);
-
-            foreach (XmlNode thread in xmlDoc.DocumentElement.ChildNodes[5])
+            if (xmlDoc != null)
             {
-                int threadId = Convert.ToInt32(thread.Attributes["id"].Value);
-                threads.Add(new Thread(threadId));
-            }
+                int threadsOnPageCount = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[5].Attributes["count"].Value);
+                List<Thread> threads = new List<Thread>(threadsOnPageCount);
 
-            return threads;
+                foreach (XmlNode thread in xmlDoc.DocumentElement.ChildNodes[5])
+                {
+                    int threadId = Convert.ToInt32(thread.Attributes["id"].Value);
+                    if (Helper.CheckIfParsable($"http://forum.mods.de/bb/xml/thread.php?TID={threadId}"))
+                    {
+                        threads.Add(new Thread(threadId));
+                    }
+                    else
+                    {
+                        Console.WriteLine($"http://forum.mods.de/bb/xml/thread.php?TID={threadId} wasn't parsable.");
+                    }
+                }
+
+                return threads;
+            }
+            return null;
         }
         #endregion
     }

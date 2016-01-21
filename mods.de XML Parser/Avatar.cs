@@ -1,5 +1,8 @@
 ﻿namespace mods.de_XML_Parser
 {
+    /// <summary>
+    /// All avatar information are stored here
+    /// </summary>
     public struct Avatar
     {
         #region private fields

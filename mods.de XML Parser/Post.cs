@@ -123,47 +123,63 @@ namespace mods.de_XML_Parser
             string xmlFile = $"http://forum.mods.de/bb/xml/thread.php?TID={_threadId}&PID={_id}";
             var xmlDoc = Helper.LoadXml(xmlFile);
 
-            // if logged in, it's ChildNodes[9], not ChildNodes[8]
-            page = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[8].Attributes["page"].Value);
-            offset = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[8].Attributes["offset"].Value);
-            inBoardId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[6].Attributes["id"].Value);
-
-            foreach (XmlNode node in xmlDoc.DocumentElement.ChildNodes[8])
+            if (xmlDoc != null)
             {
-                if (_id == Convert.ToInt32(node.Attributes["id"].Value))
+                // if logged in, it's ChildNodes[9], not ChildNodes[8]
+                page = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[8].Attributes["page"].Value);
+                offset = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[8].Attributes["offset"].Value);
+                inBoardId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[6].Attributes["id"].Value);
+
+                foreach (XmlNode node in xmlDoc.DocumentElement.ChildNodes[8])
                 {
-                    int avatarId = Convert.ToInt32(node.ChildNodes[3].Attributes["id"].Value);
-                    string avatarUrl = node.ChildNodes[3].InnerText;
-
-                    int authorId = Convert.ToInt32(node.ChildNodes[0].Attributes["id"].Value);
-                    int authorGroupId = Convert.ToInt32(node.ChildNodes[0].Attributes["group-id"].Value);
-                    string authorName = node.ChildNodes[0].InnerText;
-                    Avatar avatar = new Avatar(avatarId, avatarUrl);
-
-                    author = new User(authorId, authorName, authorGroupId, avatar);
-
-                    double unixTimeStamp = Convert.ToInt32(node.ChildNodes[1].Attributes["timestamp"].Value);
-                    date = Helper.UnixTimeStampToDateTime(unixTimeStamp);
-
-                    editedCount = Convert.ToInt32(node.ChildNodes[2].ChildNodes[0].Attributes["count"].Value);
-
-                    if (EditedCount > 0)
+                    if (_id == Convert.ToInt32(node.Attributes["id"].Value))
                     {
-                        string editUserName =
-                            node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].InnerText;
-                        int editUserId =
-                            Convert.ToInt32(node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].Attributes["id"].Value);
-                        double editTimeStamp =
-                            Convert.ToInt32(node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[1].Attributes["timestamp"].Value);
+                        bool banned;
+                        try
+                        {
+                            banned = Convert.ToBoolean(Convert.ToInt32(node.ChildNodes[0].Attributes["locked"].Value));
+                        }
+                        catch (NullReferenceException)
+                        {
+                            banned = false;
+                        }
 
-                        User editUser = new User(editUserId, editUserName);
-                        lastEdit = new Edit(editUser, editTimeStamp);
+                        int avatarId = Convert.ToInt32(node.ChildNodes[3].Attributes["id"].Value);
+                        string avatarUrl = node.ChildNodes[3].InnerText;
+
+                        int authorId = Convert.ToInt32(node.ChildNodes[0].Attributes["id"].Value);
+                        int authorGroupId = Convert.ToInt32(node.ChildNodes[0].Attributes["group-id"].Value);
+                        string authorName = node.ChildNodes[0].InnerText;
+                        Avatar avatar = new Avatar(avatarId, avatarUrl);
+
+                        author = new User(authorId, authorName, authorGroupId, avatar, banned);
+
+                        double unixTimeStamp = Convert.ToInt32(node.ChildNodes[1].Attributes["timestamp"].Value);
+                        date = Helper.UnixTimeStampToDateTime(unixTimeStamp);
+
+                        editedCount = Convert.ToInt32(node.ChildNodes[2].ChildNodes[0].Attributes["count"].Value);
+
+                        if (EditedCount > 0)
+                        {
+                            string editUserName =
+                                node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].InnerText;
+                            int editUserId =
+                                Convert.ToInt32(
+                                    node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].Attributes["id"].Value);
+                            double editTimeStamp =
+                                Convert.ToInt32(
+                                    node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[1].Attributes["timestamp"]
+                                        .Value);
+
+                            User editUser = new User(editUserId, editUserName);
+                            lastEdit = new Edit(editUser, editTimeStamp);
+                        }
+
+                        message = node.ChildNodes[2].ChildNodes[1].InnerText;
+                        title = node.ChildNodes[2].ChildNodes[2].InnerText;
+
+                        break;
                     }
-
-                    message = node.ChildNodes[2].ChildNodes[1].InnerText;
-                    title = node.ChildNodes[2].ChildNodes[2].InnerText;
-
-                    break;
                 }
             }
         }
@@ -207,82 +223,117 @@ namespace mods.de_XML_Parser
 
             string xmlFile = $"http://forum.mods.de/bb/xml/thread.php?TID={_threadId}&page={_pageId}";
             var xmlDoc = Helper.LoadXml(xmlFile);
-
-            // if logged in, it's ChildNodes[9], not ChildNodes[8]
-            int page = _pageId;
-            int offset = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[8].Attributes["offset"].Value);
-            int inBoardId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[6].Attributes["id"].Value);
-
-            int postsOnPage = xmlDoc.DocumentElement.ChildNodes[8].ChildNodes.Count;
-            List<Post> posts = new List<Post>(postsOnPage);
-
-            foreach (XmlNode node in xmlDoc.DocumentElement.ChildNodes[8])
+            if (xmlDoc != null)
             {
-                int id = Convert.ToInt32(node.Attributes["id"].Value);
-                int avatarId;
-                string avatarUrl;
+                // if logged in, it's ChildNodes[9], not ChildNodes[8]
+                int page = _pageId;
+                int offset = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[8].Attributes["offset"].Value);
+                int inBoardId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[6].Attributes["id"].Value);
 
-                try
+                int postsOnPage = xmlDoc.DocumentElement.ChildNodes[8].ChildNodes.Count;
+                List<Post> posts = new List<Post>(postsOnPage);
+
+                foreach (XmlNode node in xmlDoc.DocumentElement.ChildNodes[8])
                 {
-                    avatarId = Convert.ToInt32(node.ChildNodes[3].Attributes["id"].Value);
-                    avatarUrl = node.ChildNodes[3].InnerText;
+                    int id = Convert.ToInt32(node.Attributes["id"].Value);
+                    bool banned;
+                    if (node.ChildNodes[0].Attributes.Count > 2)
+                    {
+                        try
+                        {
+                            banned = Convert.ToBoolean(Convert.ToInt32(node.ChildNodes[0].Attributes["locked"].Value));
+                        }
+                        catch (NullReferenceException)
+                        {
+                            banned = false;
+                        }
+                    }
+                    else
+                    {
+                        banned = false;
+                    }
+
+                    int avatarId;
+                    string avatarUrl;
+                    if (node.ChildNodes[3].Attributes.Count > 0)
+                    {
+                        try
+                        {
+                            avatarId = Convert.ToInt32(node.ChildNodes[3].Attributes["id"].Value);
+                            avatarUrl = node.ChildNodes[3].InnerText;
+                        }
+                        catch (NullReferenceException)
+                        {
+                            avatarId = -1;
+                            avatarUrl = String.Empty;
+                        }
+                    }
+                    else
+                    {
+                        avatarId = -1;
+                        avatarUrl = string.Empty;
+                    }
+
+                    int authorId = Convert.ToInt32(node.ChildNodes[0].Attributes["id"].Value);
+                    int authorGroupId;
+
+                    if (node.ChildNodes[0].Attributes.Count > 1)
+                    {
+                        try
+                        {
+                            authorGroupId = Convert.ToInt32(node.ChildNodes[0].Attributes["group-id"].Value);
+                        }
+                        catch (NullReferenceException)
+                        {
+                            authorGroupId = -1;
+                        }
+                    }
+                    else
+                    {
+                        authorGroupId = -1;
+                    }
+
+                    string authorName = node.ChildNodes[0].InnerText;
+                    Avatar avatar = new Avatar(avatarId, avatarUrl);
+
+                    User author = new User(authorId, authorName, authorGroupId, avatar, banned);
+
+                    double unixTimeStamp = Convert.ToInt32(node.ChildNodes[1].Attributes["timestamp"].Value);
+                    DateTime creationDate = Helper.UnixTimeStampToDateTime(unixTimeStamp);
+
+                    int editedCount = Convert.ToInt32(node.ChildNodes[2].ChildNodes[0].Attributes["count"].Value);
+
+                    string message = node.ChildNodes[2].ChildNodes[1].InnerText;
+                    string title = node.ChildNodes[2].ChildNodes[2].InnerText;
+
+                    if (editedCount > 0)
+                    {
+                        string editUserName =
+                            node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].InnerText;
+                        int editUserId =
+                            Convert.ToInt32(
+                                node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].Attributes["id"].Value);
+                        double editTimeStamp =
+                            Convert.ToInt32(
+                                node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[1].Attributes["timestamp"].Value);
+
+                        User editUser = new User(editUserId, editUserName);
+                        Edit lastEdit = new Edit(editUser, editTimeStamp);
+
+                        posts.Add(new Post(id, inThreadId, inBoardId, page, offset, author, creationDate, message, title,
+                            editedCount, lastEdit));
+                    }
+                    else
+                    {
+                        posts.Add(new Post(id, inThreadId, inBoardId, page, offset, author, creationDate, message, title,
+                            editedCount));
+                    }
                 }
-                catch (NullReferenceException)
-                {
-                    avatarId = -1;
-                    avatarUrl = String.Empty;
-                }
 
-                int authorId = Convert.ToInt32(node.ChildNodes[0].Attributes["id"].Value);
-                int authorGroupId;
-
-                try
-                {
-                    authorGroupId = Convert.ToInt32(node.ChildNodes[0].Attributes["group-id"].Value);
-                }
-                catch (NullReferenceException)
-                {
-                    authorGroupId = -1;
-                }
-
-                string authorName = node.ChildNodes[0].InnerText;
-                Avatar avatar = new Avatar(avatarId, avatarUrl);
-
-                User author = new User(authorId, authorName, authorGroupId, avatar);
-
-                double unixTimeStamp = Convert.ToInt32(node.ChildNodes[1].Attributes["timestamp"].Value);
-                DateTime creationDate = Helper.UnixTimeStampToDateTime(unixTimeStamp);
-
-                int editedCount = Convert.ToInt32(node.ChildNodes[2].ChildNodes[0].Attributes["count"].Value);
-
-                string message = node.ChildNodes[2].ChildNodes[1].InnerText;
-                string title = node.ChildNodes[2].ChildNodes[2].InnerText;
-
-                if (editedCount > 0)
-                {
-                    string editUserName =
-                        node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].InnerText;
-                    int editUserId =
-                        Convert.ToInt32(
-                            node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[0].Attributes["id"].Value);
-                    double editTimeStamp =
-                        Convert.ToInt32(
-                            node.ChildNodes[2].ChildNodes[0].ChildNodes[0].ChildNodes[1].Attributes["timestamp"].Value);
-
-                    User editUser = new User(editUserId, editUserName);
-                    Edit lastEdit = new Edit(editUser, editTimeStamp);
-
-                    posts.Add(new Post(id, inThreadId, inBoardId, page, offset, author, creationDate, message, title,
-                        editedCount, lastEdit));
-                }
-                else
-                {
-                    posts.Add(new Post(id, inThreadId, inBoardId, page, offset, author, creationDate, message, title,
-                        editedCount));
-                }
+                return posts;
             }
 
-            return posts;
+            return null;
         }
         #endregion
     }

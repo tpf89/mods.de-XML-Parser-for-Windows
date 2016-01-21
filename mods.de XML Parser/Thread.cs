@@ -10,12 +10,11 @@ namespace mods.de_XML_Parser
     public class Thread
     {
         #region private fields
-        private readonly int id;
         private readonly int currentUserId;
         private readonly int numberOfReplies;
         private readonly int numberOfHits;
         private readonly int numberOfPages;
-        private readonly int inThreadId;
+        private readonly int threadId;
         private readonly int inBoardId;
         private readonly User author;
         private readonly string title;
@@ -25,13 +24,6 @@ namespace mods.de_XML_Parser
         #endregion
 
         #region Properties
-        public int Id
-        {
-            get
-            {
-                return id;
-            }
-        }
 
         public int CurrentUserId
         {
@@ -65,11 +57,11 @@ namespace mods.de_XML_Parser
             }
         }
 
-        public int InThreadId
+        public int ThreadId
         {
             get
             {
-                return inThreadId;
+                return threadId;
             }
         }
 
@@ -133,53 +125,100 @@ namespace mods.de_XML_Parser
 
             string xmlFile = $"http://forum.mods.de/bb/xml/thread.php?TID={_threadId}";
             var xmlDoc = Helper.LoadXml(xmlFile);
-
+            
             currentUserId = Convert.ToInt32(xmlDoc.DocumentElement.Attributes["current-user-id"].Value);
-            id = _threadId;
             title = xmlDoc.DocumentElement.ChildNodes[0].InnerText;
             subtitle = xmlDoc.DocumentElement.ChildNodes[1].InnerText;
             numberOfReplies = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[2].Attributes["value"].Value);
             numberOfHits = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[3].Attributes["value"].Value);
-            numberOfPages = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[4].Attributes["value"].Value);
-
+            try
+            {
+                numberOfPages = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[4].Attributes["value"].Value);
+            }
+            catch (NullReferenceException)
+            {
+                numberOfPages = 0;
+            }
             foreach (XmlNode item in xmlDoc.DocumentElement.ChildNodes[5].ChildNodes)
             {
                 int state = Convert.ToInt32(item.Attributes["value"].Value);
                 Flags.Add(item.Name, Convert.ToBoolean(state));
             }
-
-            inBoardId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[6].Attributes["id"].Value);
-
+            try
+            {
+                inBoardId = Convert.ToInt32(xmlDoc.DocumentElement.ChildNodes[6].Attributes["id"].Value);
+            }
+            catch (NullReferenceException)
+            {
+                inBoardId = 0;
+            }
             XmlNode firstPostNode = xmlDoc.DocumentElement.ChildNodes[7].ChildNodes[0];
-
-            int threadStarterId = Convert.ToInt32(firstPostNode.ChildNodes[0].Attributes["id"].Value);
-            string threadStarterName = firstPostNode.ChildNodes[0].InnerText;
+            int threadStarterId;
+            string threadStarterName;
+            try
+            {
+                threadStarterId = Convert.ToInt32(firstPostNode.ChildNodes[0].Attributes["id"].Value);
+                threadStarterName = firstPostNode.ChildNodes[0].InnerText;
+            }
+            catch (NullReferenceException)
+            {
+                threadStarterId = 0;
+                threadStarterName = string.Empty;
+            }
             author = new User(threadStarterId, threadStarterName);
 
-            double unixTimeStamp = Convert.ToInt64(firstPostNode.ChildNodes[1].Attributes["timestamp"].Value);
+            double unixTimeStamp;
+            try
+            {
+                unixTimeStamp = Convert.ToInt64(firstPostNode.ChildNodes[1].Attributes["timestamp"].Value);
+            }
+            catch (NullReferenceException)
+            {
+                unixTimeStamp = 0;
+            }
             date = Helper.UnixTimeStampToDateTime(unixTimeStamp);
 
-            inThreadId = Convert.ToInt32(firstPostNode.ChildNodes[2].Attributes["id"].Value);
-            inBoardId = Convert.ToInt32(firstPostNode.ChildNodes[3].Attributes["id"].Value);
+            threadId = _threadId;
+            try
+            {
+                inBoardId = Convert.ToInt32(firstPostNode.ChildNodes[3].Attributes["id"].Value);
+            }
+            catch (NullReferenceException)
+            {
+                inBoardId = 0;
+            }
         }
         #endregion
 
         #region Methods
+
         /// <summary>
         /// Gets all posts of a Thread
         /// </summary>
         /// <returns>A list with all posts which have been posted in this thread</returns>
         public List<Post> GetPostsOfThread()
         {
-            List<Post> posts = new List<Post>(this.NumberOfReplies);
-
-            for (int i = 0; i < this.NumberOfPages; i++)
+            try
             {
-                posts.AddRange(Post.GetPostsOfPage(this.Id, i + 1));
-            }
+                List<Post> posts = new List<Post>(this.NumberOfReplies);
 
-            return posts;
+                for (int i = 0; i < this.NumberOfPages; i++)
+                {
+                    List<Post> listOfPosts = Post.GetPostsOfPage(this.threadId, i + 1);
+                    if (listOfPosts != null)
+                    {
+                        posts.AddRange(listOfPosts);
+                    }
+                }
+
+                return posts;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return null;
+            }
         }
+
         #endregion
     }
 }

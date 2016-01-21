@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Xml;
 
@@ -55,14 +56,26 @@ namespace mods.de_XML_Parser
             
             try
             {
+                while (Helper.pingForum("forum.mods.de", 10000) == false)
+                {
+                    Console.WriteLine("Can't reach forum.mods.de right now, try again in 15 seconds...");
+                    System.Threading.Thread.Sleep(15000);
+                }
+
                 xmlDoc.Load(_url);
             }
             catch (XmlException)
             {
-                WebClient client = new WebClient();
+                while (Helper.pingForum("forum.mods.de", 100000) == false)
+                {
+                    Console.WriteLine("Can't reach forum.mods.de right now, try again in 15 seconds...");
+                    System.Threading.Thread.Sleep(15000);
+                }
+
+                WebClient client = new WebClient(); ;
                 Stream stream = client.OpenRead(_url);
                 StreamReader reader = new StreamReader(stream);
-                String content = reader.ReadToEnd();
+                string content = reader.ReadToEnd();
 
                 content = RemoveTroublesomeCharacters(content);
                 xmlDoc.LoadXml(content);
@@ -98,6 +111,61 @@ namespace mods.de_XML_Parser
             }
             return newString.ToString();
 
+        }
+
+        private static bool pingForum(string _hostName, int _timeoutTime)
+        {
+            Ping ping = new Ping();
+            PingReply pingReply = ping.Send(_hostName, _timeoutTime);
+
+            if (pingReply.Status == IPStatus.Success)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool CheckIfParsable(string _url)
+        {
+            var xmlDoc = new XmlDocument();
+
+            try
+            {
+                while (Helper.pingForum("forum.mods.de", 10000) == false)
+                {
+                    Console.WriteLine("Can't reach forum.mods.de right now, try again in 15 seconds...");
+                    System.Threading.Thread.Sleep(15000);
+                }
+
+                xmlDoc.Load(_url);
+            }
+            catch (XmlException)
+            {
+                while (Helper.pingForum("forum.mods.de", 100000) == false)
+                {
+                    Console.WriteLine("Can't reach forum.mods.de right now, try again in 15 seconds...");
+                    System.Threading.Thread.Sleep(15000);
+                }
+
+                WebClient client = new WebClient(); ;
+                Stream stream = client.OpenRead(_url);
+                StreamReader reader = new StreamReader(stream);
+                string content = reader.ReadToEnd();
+
+                content = RemoveTroublesomeCharacters(content);
+                xmlDoc.LoadXml(content);
+            }
+            catch (WebException)
+            {
+                return false;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

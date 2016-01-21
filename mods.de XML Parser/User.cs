@@ -6,10 +6,11 @@
     public struct User
     {
         #region private fields
-        private int id;
-        private string name;
-        private int groupId;
-        private Avatar avatar;
+        private readonly int id;
+        private readonly string name;
+        private readonly int groupId;
+        private readonly Avatar avatar;
+        private readonly bool banned;
         #endregion
 
         #region Properties
@@ -30,7 +31,7 @@
 
         }
 
-        public int GorupId
+        public int GroupId
         {
             get
             {
@@ -43,6 +44,14 @@
             get
             {
                 return avatar;
+            }
+        }
+
+        public bool Banned
+        {
+            get
+            {
+                return banned;
             }
         }
         #endregion
@@ -58,6 +67,7 @@
         {
             id = _userId;
             name = _userName;
+            banned = false;
             groupId = -1;
             avatar = new Avatar(-1, null);
         }
@@ -70,12 +80,14 @@
         /// <param name="_userName"></param>
         /// <param name="_groupId"></param>
         /// <param name="_avatar"></param>
-        public User(int _userId, string _userName, int _groupId, Avatar _avatar)
+        public User(int _userId, string _userName, int _groupId, Avatar _avatar, bool _banned)
         {
             id = _userId;
             name = _userName;
             avatar = _avatar;
+            banned = _banned;
             groupId = _groupId;
+            banned = _banned;
         }
         #endregion
     }

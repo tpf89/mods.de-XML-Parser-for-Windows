@@ -78,36 +78,41 @@ namespace mods.de_XML_Parser
             var xmlFile = "http://forum.mods.de/bb/xml/boards.php";
             var xmlDoc = Helper.LoadXml(xmlFile);
 
-            int categoryCount = xmlDoc.DocumentElement.ChildNodes.Count;
-            List<Category> allCAtegories = new List<Category>(categoryCount);
-
-            foreach (XmlNode category in xmlDoc.DocumentElement.ChildNodes)
+            if (xmlDoc != null)
             {
-                int id = Convert.ToInt32(category.Attributes[0].Value);
-                string name = category.ChildNodes[0].InnerText;
-                string description = category.ChildNodes[1].InnerText;
-                int boardCount = 0;
+                int categoryCount = xmlDoc.DocumentElement.ChildNodes.Count;
+                List<Category> allCAtegories = new List<Category>(categoryCount);
 
-                if (category.ChildNodes.Count > 2)
+                foreach (XmlNode category in xmlDoc.DocumentElement.ChildNodes)
                 {
-                    boardCount = category.ChildNodes[2].ChildNodes.Count;
-                }
+                    int id = Convert.ToInt32(category.Attributes[0].Value);
+                    string name = category.ChildNodes[0].InnerText;
+                    string description = category.ChildNodes[1].InnerText;
+                    int boardCount = 0;
 
-                List<int> boardIds = new List<int>(boardCount);
-
-                if (boardCount != 0)
-                {
-                    foreach (XmlNode board in category.ChildNodes[2].ChildNodes)
+                    if (category.ChildNodes.Count > 2)
                     {
-                        int boardId = Convert.ToInt32(board.Attributes[0].Value);
-                        boardIds.Add(boardId);
+                        boardCount = category.ChildNodes[2].ChildNodes.Count;
                     }
+
+                    List<int> boardIds = new List<int>(boardCount);
+
+                    if (boardCount != 0)
+                    {
+                        foreach (XmlNode board in category.ChildNodes[2].ChildNodes)
+                        {
+                            int boardId = Convert.ToInt32(board.Attributes[0].Value);
+                            boardIds.Add(boardId);
+                        }
+                    }
+
+                    allCAtegories.Add(new Category(id, name, description, boardIds));
                 }
 
-                allCAtegories.Add(new Category(id, name, description, boardIds));
+                return allCAtegories;
             }
 
-            return allCAtegories;
+            return null;
         }
         #endregion
     }
